@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Almacen {
+  id         Int         @id @default(autoincrement())
+  nombre     String      @unique
+  ubicacion  String?
+  created_at DateTime    @default(now())
+  usuarios   Usuario[]
+  inventario Inventario[]
+  movimientos Movimiento[]
+}
+
+model Usuario {
+  id          Int         @id @default(autoincrement())
+  nombre      String
+  email       String      @unique
+  contrasena  String
+  rol         String
+  almacen_id  Int?
+  created_at  DateTime    @default(now())
+  almacen     Almacen?    @relation(fields: [almacen_id], references: [id])
+  movimientos Movimiento[]
+}
+
+model Categoria {
+  id          Int         @id @default(autoincrement())
+  nombre      String      @unique
+  descripcion String?
+  materiales  Material[]
+}
+
+model Material {
+  id            Int         @id @default(autoincrement())
+  codigo        String      @unique
+  nombre        String
+  descripcion   String?
+  unidad_medida String      @default("unidad")
+  categoria_id  Int
+  stock_minimo  Int         @default(5)
+  created_at    DateTime    @default(now())
+  categoria     Categoria   @relation(fields: [categoria_id], references: [id])
+  inventario    Inventario[]
+  movimientos   Movimiento[]
+}
+
+model Inventario {
+  id                 Int       @id @default(autoincrement())
+  almacen_id         Int
+  material_id        Int
+  cantidad           Int       @default(0)
+  ubicacion_estante  String?
+  ultima_actualizacion DateTime @default(now()) @updatedAt
+  almacen            Almacen   @relation(fields: [almacen_id], references: [id])
+  material           Material  @relation(fields: [material_id], references: [id])
+  @@unique([almacen_id, material_id])
+}
+
+model Movimiento {
+  id          Int      @id @default(autoincrement())
+  almacen_id  Int
+  material_id Int
+  usuario_id  Int
+  tipo        String   // Cambiado de Enum a String
+  cantidad    Int
+  motivo      String?  @db.VarChar(200)
+  fecha       DateTime @default(now())
+  
+  // NUEVOS CAMPOS
+  persona_nombre     String?  @db.VarChar(100)
+  persona_identidad  String?  @db.VarChar(50)
+  persona_cargo      String?  @db.VarChar(100)
+  obra_destino       String?  @db.VarChar(150)
+  proveedor_nombre   String?  @db.VarChar(100)
+  comprobante_numero String?  @db.VarChar(50)
+  observaciones      String?  @db.Text
+  
+  almacen     Almacen  @relation(fields: [almacen_id], references: [id])
+  material    Material @relation(fields: [material_id], references: [id])
+  usuario     Usuario  @relation(fields: [usuario_id], references: [id])
+}
